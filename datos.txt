@@ -1,0 +1,12 @@
+CARRERA: Diseño Multimedial
+MATERIA:Desarrollo de Aplicaciones Multiplataforma
+AÑO: 2022
+CUATRIMESTRE: 5to Cuatrimestre
+COMISIÓN:B
+TURNO: Tarde
+NOMBRE Y APELLIDO: Aixa Calcagno	
+NOMBRE Y APELLIDO: Noelia Novo
+
+
+LINK PÁGINA WEB:
+https://futurama2022.000webhostapp.com/index.html
