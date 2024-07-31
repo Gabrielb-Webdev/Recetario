@@ -1,0 +1,5 @@
+<Files "register.php">
+    <Limit GET POST>
+    Allow from all
+    </Limit>
+</Files>

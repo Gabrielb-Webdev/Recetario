@@ -102,133 +102,106 @@
         }
     </style>
     <script>
-        $(document).on("pageinit", function () {
-            $.mobile.defaultPageTransition = "slide";
-            $.mobile.defaultDialogTransition = "slidedown";
-        });
+        $(document).ready(function () {
+            // Función para manejar el registro de usuario
+            function registerUser(username, password) {
+                $.post('https://palegreen-mandrill-927363.hostingersite.com/database/register.php', {
+                    username: username,
+                    password: password
+                }).done(function (response) {
+                    console.log(response); // Ver la respuesta real
+                    if (response.success) {
+                        alert('Registro exitoso. Por favor, inicia sesión.');
+                        $.mobile.changePage("#login");
+                    } else {
+                        alert('Error de registro: ' + (response.error || 'Desconocido'));
+                        localStorage.setItem(username, password);
+                        alert('Registro guardado en local storage.');
+                    }
+                }).fail(function () {
+                    localStorage.setItem(username, password);
+                    alert('Error de conexión. Registrando en local storage.');
+                });
+            }
 
-        function cargarNotas(tipo, contenedor, claseNota) {
-            var recuperados_json = localStorage.getItem("notas");
-            var usuario = localStorage.getItem('activeSession');
-            if (recuperados_json) {
-                var recuperados_array = JSON.parse(recuperados_json);
-                $(contenedor).empty();
-                $.each(recuperados_array, function (indice, valor) {
-                    if (valor.tipo === tipo && valor.usuario === usuario) {
-                        var nota = $('<div></div>');
-                        nota.attr('class', claseNota)
-                            .attr('data-cumplido', valor.cumplido ? 'si' : 'no')
-                            .append('<a href="#" class="check"><img src="imagenes/a.png" alt="a"></a>')
-                            .append('<a href="#" class="edit"><img src="imagenes/b.png" alt="b"></a>')
-                            .append('<a href="#" class="delete"><img src="imagenes/c.png" alt="c"></a>')
-                            .append('<h3>' + valor.titulo + '</h3>')
-                            .append('<p>' + valor.contenido + '</p>');
-
-                        if (valor.cumplido) {
-                            nota.css({ backgroundColor: "green", color: "white" });
-                        }
-
-                        $(contenedor).append(nota);
+            // Función para manejar el login de usuario
+            function loginUser(username, password) {
+                $.post('https://palegreen-mandrill-927363.hostingersite.com/database/login.php', {
+                    username: username,
+                    password: password
+                }).done(function (response) {
+                    if (response.success) {
+                        alert('Login exitoso.');
+                        localStorage.setItem('activeSession', username);
+                        $.mobile.changePage("#home");
+                        loadNotesFromDatabase();
+                    } else {
+                        alert('Datos incorrectos.');
+                    }
+                }).fail(function () {
+                    if (localStorage.getItem(username) === password) {
+                        alert('Login exitoso (local storage).');
+                        localStorage.setItem('activeSession', username);
+                        $.mobile.changePage("#home");
+                        loadLocalNotes();
+                    } else {
+                        alert('Error de conexión y datos incorrectos.');
                     }
                 });
             }
-        }
 
-        function guardarNota(nuevaNota) {
-            var notas = localStorage.getItem("notas");
-            if (!notas) {
-                notas = [];
-            } else {
-                notas = JSON.parse(notas);
+            // Función para cargar notas desde la base de datos
+            function loadNotesFromDatabase() {
+                var usuario_id = localStorage.getItem('activeSession');
+                $.get('https://palegreen-mandrill-927363.hostingersite.com/database/get_notes.php', {
+                    usuario_id: usuario_id,
+                    tipo: 'desayuno'
+                }).done(function (response) {
+                    displayNotes(response, '#notas', 'nota');
+                }).fail(function () {
+                    loadLocalNotes();
+                });
             }
-            notas.push(nuevaNota);
-            localStorage.setItem("notas", JSON.stringify(notas));
-            cargarNotas(nuevaNota.tipo, '#notas', 'nota');
-        }
 
-        function guardarNotasActualizadas(tipo, contenedor, claseNota) {
-            var notas_actuales = [];
-            $(contenedor + ' .' + claseNota).each(function () {
-                var nota = {
-                    usuario: localStorage.getItem('activeSession'),
-                    tipo: tipo,
-                    titulo: $(this).find('h3').text(),
-                    contenido: $(this).find('p').text(),
-                    cumplido: $(this).attr('data-cumplido') === 'si' ? true : false
-                };
-                notas_actuales.push(nota);
-            });
+            // Función para mostrar notas en el DOM
+            function displayNotes(notes, container, className) {
+                $(container).empty();
+                notes.forEach(function (note) {
+                    var noteElement = $('<div></div>')
+                        .attr('class', className)
+                        .attr('data-cumplido', note.cumplido ? 'si' : 'no')
+                        .append('<a href="#" class="check"><img src="imagenes/a.png" alt="a"></a>')
+                        .append('<a href="#" class="edit"><img src="imagenes/b.png" alt="b"></a>')
+                        .append('<a href="#" class="delete"><img src="imagenes/c.png" alt="c"></a>')
+                        .append('<h3>' + note.titulo + '</h3>')
+                        .append('<p>' + note.contenido + '</p>');
 
-            var todasNotas = JSON.parse(localStorage.getItem("notas")) || [];
-            todasNotas = todasNotas.filter(nota => nota.tipo !== tipo || nota.usuario !== localStorage.getItem('activeSession')).concat(notas_actuales);
-            localStorage.setItem("notas", JSON.stringify(todasNotas));
-        }
+                    if (note.cumplido) {
+                        noteElement.css({ backgroundColor: "green", color: "white" });
+                    }
 
-        $(document).ready(function () {
-            $.mobile.page.prototype.options.backBtnText = "Volver";
-            $.mobile.page.prototype.options.addBackBtn = true;
-            $.mobile.page.prototype.options.backBtnTheme = "d";
+                    $(container).append(noteElement);
+                });
+            }
 
-            // Manejar la clase personalizada para la transición
-            $(document).on("click", ".back-right", function (e) {
-                e.preventDefault();
-                var link = $(this).attr("href");
-                $.mobile.changePage(link, { transition: "slide", reverse: true });
-            });
-
-            // Registro de usuario
+            // Eventos de registro y login
             $('#register-form').on('submit', function (e) {
                 e.preventDefault();
                 var username = $('#register-username').val();
                 var password = $('#register-password').val();
-
-                if (localStorage.getItem(username)) {
-                    alert('Usuario ya registrado.');
-                } else {
-                    localStorage.setItem(username, password);
-                    alert('Registro exitoso.');
-                    $.mobile.changePage("#login");
-                }
+                registerUser(username, password);
             });
 
-            // Login de usuario
             $('#login-form').on('submit', function (e) {
                 e.preventDefault();
                 var username = $('#login-username').val();
                 var password = $('#login-password').val();
-
-                if (localStorage.getItem(username) === password) {
-                    alert('Login exitoso.');
-                    localStorage.setItem('activeSession', username);
-                    console.log('Sesión activa: ' + username);
-                    $.mobile.changePage("#home");
-                    cargarNotas('desayuno', '#notas', 'nota'); // Cargar notas de desayuno al iniciar sesión
-                    cargarNotas('almuerzo', '#notas2', 'nota2'); // Cargar notas de almuerzo al iniciar sesión
-                    cargarNotas('merienda', '#notas3', 'nota3'); // Cargar notas de merienda al iniciar sesión
-                    cargarNotas('cena', '#notas4', 'nota4'); // Cargar notas de cena al iniciar sesión
-                } else {
-                    alert('Datos incorrectos.');
-                }
+                loginUser(username, password);
             });
-
-            // Cerrar sesión
-            $('#logout-button, #logout-button-footer').on('click', function () {
-                localStorage.removeItem('activeSession');
-                alert('Sesión cerrada.');
-                $.mobile.changePage("#login");
-            });
-            
-            // Mostrar sesión activa en consola
-            if (localStorage.getItem('activeSession')) {
-                console.log('Sesión activa: ' + localStorage.getItem('activeSession'));
-                cargarNotas('desayuno', '#notas', 'nota'); // Cargar notas al cargar la página si hay una sesión activa
-                cargarNotas('almuerzo', '#notas2', 'nota2'); // Cargar notas al cargar la página si hay una sesión activa
-                cargarNotas('merienda', '#notas3', 'nota3'); // Cargar notas al cargar la página si hay una sesión activa
-                cargarNotas('cena', '#notas4', 'nota4'); // Cargar notas al cargar la página si hay una sesión activa
-            }
 
             // Evento para añadir nueva receta de Desayuno
-            $('#agregar form').on('submit', function () {
+            $('#agregar form').on('submit', function (e) {
+                e.preventDefault();
                 var titulo = $('#titulo').val();
                 var contenido = $('#contenido').val();
                 var usuario = localStorage.getItem('activeSession');
@@ -241,258 +214,35 @@
                 };
                 guardarNota(nuevaNota);
                 $.mobile.navigate('#desayuno');
-                return false;
             });
 
-            // Evento para añadir nueva receta de Almuerzo
-            $('#agregar2 form').on('submit', function () {
-                var titulo2 = $('#titulo2').val();
-                var contenido2 = $('#contenido2').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota2 = {
-                    usuario: usuario,
-                    tipo: 'almuerzo',
-                    titulo: titulo2,
-                    contenido: contenido2,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota2);
-                $.mobile.navigate('#almuerzo');
-                cargarNotas('almuerzo', '#notas2', 'nota2'); // Cargar notas de almuerzo inmediatamente
-                return false;
-            });
-
-            // Evento para añadir nueva receta de Merienda
-            $('#agregar3 form').on('submit', function () {
-                var titulo3 = $('#titulo3').val();
-                var contenido3 = $('#contenido3').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota3 = {
-                    usuario: usuario,
-                    tipo: 'merienda',
-                    titulo: titulo3,
-                    contenido: contenido3,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota3);
-                $.mobile.navigate('#merienda');
-                cargarNotas('merienda', '#notas3', 'nota3'); // Cargar notas de merienda inmediatamente
-                return false;
-            });
-
-            // Evento para añadir nueva receta de Cena
-            $('#agregar4 form').on('submit', function () {
-                var titulo4 = $('#titulo4').val();
-                var contenido4 = $('#contenido4').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota4 = {
-                    usuario: usuario,
-                    tipo: 'cena',
-                    titulo: titulo4,
-                    contenido: contenido4,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota4);
-                $.mobile.navigate('#cena');
-                cargarNotas('cena', '#notas4', 'nota4'); // Cargar notas de cena inmediatamente
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de desayuno
-            $('#notas').on("click", ".nota .delete", function () {
-                var eliminar_nota = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('desayuno', '#notas', 'nota');
-                }
-            });
-
-            $('#notas').on("click", ".nota .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
+            // Función para guardar notas
+            function guardarNota(nuevaNota) {
+                $.post('https://palegreen-mandrill-927363.hostingersite.com/database/save_note.php', nuevaNota)
+                    .done(function (response) {
+                        if (!response.success) {
+                            alert('Error guardando nota en la base de datos: ' + (response.error || 'Desconocido'));
+                        } else {
+                            alert('Nota guardada exitosamente.');
+                            loadNotesFromDatabase();
+                        }
+                    }).fail(function () {
+                        alert('Error de conexión. Intentelo de nuevo más tarde.');
                     });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('desayuno', '#notas', 'nota');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('desayuno', '#notas', 'nota');
-                }
+            }
+
+            // Cerrar sesión
+            $('#logout-button, #logout-button-footer').on('click', function () {
+                localStorage.removeItem('activeSession');
+                alert('Sesión cerrada.');
+                $.mobile.changePage("#login");
             });
 
-            $('#notas').on("click", ".nota .edit", function () {
-                var titulo_actual = $(this).parent().children("h3").text();
-                var contenido_actual = $(this).parent().children("p").text();
-                $('#modifica_titulo').val(titulo_actual);
-                $('#modifica_contenido').val(contenido_actual);
-                $(this).parent().attr("data-modificando", "este");
-                $.mobile.navigate('#modificar');
-            });
-
-            $('#modificar form').on("submit", function () {
-                var titulo_modificado = $('#modifica_titulo').val();
-                var contenido_modificado = $('#modifica_contenido').val();
-                var modificando = $('#notas').find("[data-modificando]");
-                modificando.children('h3').text(titulo_modificado);
-                modificando.children('p').text(contenido_modificado);
-                modificando.removeAttr("data-modificando");
-                guardarNotasActualizadas('desayuno', '#notas', 'nota');
-
-                $.mobile.navigate("#desayuno");
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de almuerzo
-            $('#notas2').on("click", ".nota2 .delete", function () {
-                var eliminar_nota2 = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota2) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-                }
-            });
-
-            $('#notas2').on("click", ".nota2 .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-                }
-            });
-
-            $('#notas2').on("click", ".nota2 .edit", function () {
-                var titulo_actual2 = $(this).parent().children("h3").text();
-                var contenido_actual2 = $(this).parent().children("p").text();
-                $('#modifica_titulo2').val(titulo_actual2);
-                $('#modifica_contenido2').val(contenido_actual2);
-                $(this).parent().attr("data-modificando", "este2");
-                $.mobile.navigate('#modificar2');
-            });
-
-            $('#modificar2 form').on("submit", function () {
-                var titulo_modificado2 = $('#modifica_titulo2').val();
-                var contenido_modificado2 = $('#modifica_contenido2').val();
-                var modificando2 = $('#notas2').find("[data-modificando]");
-                modificando2.children('h3').text(titulo_modificado2);
-                modificando2.children('p').text(contenido_modificado2);
-                modificando2.removeAttr("data-modificando");
-                guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-
-                $.mobile.navigate("#almuerzo");
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de merienda
-            $('#notas3').on("click", ".nota3 .delete", function () {
-                var eliminar_nota3 = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota3) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-                }
-            });
-
-            $('#notas3').on("click", ".nota3 .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-                }
-            });
-
-            $('#notas3').on("click", ".nota3 .edit", function () {
-                var titulo_actual3 = $(this).parent().children("h3").text();
-                var contenido_actual3 = $(this).parent().children("p").text();
-                $('#modifica_titulo3').val(titulo_actual3);
-                $('#modifica_contenido3').val(contenido_actual3);
-                $(this).parent().attr("data-modificando", "este3");
-                $.mobile.navigate('#modificar3');
-            });
-
-            $('#modificar3 form').on("submit", function () {
-                var titulo_modificado3 = $('#modifica_titulo3').val();
-                var contenido_modificado3 = $('#modifica_contenido3').val();
-                var modificando3 = $('#notas3').find("[data-modificando]");
-                modificando3.children('h3').text(titulo_modificado3);
-                modificando3.children('p').text(contenido_modificado3);
-                modificando3.removeAttr("data-modificando");
-                guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-
-                $.mobile.navigate("#merienda");
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de cena
-            $('#notas4').on("click", ".nota4 .delete", function () {
-                var eliminar_nota4 = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota4) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('cena', '#notas4', 'nota4');
-                }
-            });
-
-            $('#notas4').on("click", ".nota4 .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('cena', '#notas4', 'nota4');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('cena', '#notas4', 'nota4');
-                }
-            });
-
-            $('#notas4').on("click", ".nota4 .edit", function () {
-                var titulo_actual4 = $(this).parent().children("h3").text();
-                var contenido_actual4 = $(this).parent().children("p").text();
-                $('#modifica_titulo4').val(titulo_actual4);
-                $('#modifica_contenido4').val(contenido_actual4);
-                $(this).parent().attr("data-modificando", "este4");
-                $.mobile.navigate('#modificar4');
-            });
-
-            $('#modificar4 form').on("submit", function () {
-                var titulo_modificado4 = $('#modifica_titulo4').val();
-                var contenido_modificado4 = $('#modifica_contenido4').val();
-                var modificando4 = $('#notas4').find("[data-modificando]");
-                modificando4.children('h3').text(titulo_modificado4);
-                modificando4.children('p').text(contenido_modificado4);
-                modificando4.removeAttr("data-modificando");
-                guardarNotasActualizadas('cena', '#notas4', 'nota4');
-
-                $.mobile.navigate("#cena");
-                return false;
-            });
+            // Mostrar sesión activa en consola
+            if (localStorage.getItem('activeSession')) {
+                console.log('Sesión activa: ' + localStorage.getItem('activeSession'));
+                loadNotesFromDatabase();
+            }
         });
     </script>
 </head>
@@ -505,8 +255,10 @@
         </div>
         <div role="main" class="ui-content">
             <form id="login-form">
-                <input type="text" id="login-username" required placeholder="Nombre de usuario">
-                <input type="password" id="login-password" required placeholder="Contraseña">
+                <input type="text" id="login-username" name="username" autocomplete="username" required
+                    placeholder="Nombre de usuario">
+                <input type="password" id="login-password" name="password" autocomplete="current-password" required
+                    placeholder="Contraseña">
                 <div class="form-buttons">
                     <input type="submit" value="Login" data-inline="true" data-theme="a">
                     <a href="#register" data-role="button" data-inline="true">Registrarse</a>
@@ -522,8 +274,10 @@
         </div>
         <div role="main" class="ui-content">
             <form id="register-form">
-                <input type="text" id="register-username" required placeholder="Nombre de usuario">
-                <input type="password" id="register-password" required placeholder="Contraseña">
+                <input type="text" id="register-username" name="username" autocomplete="username" required
+                    placeholder="Nombre de usuario">
+                <input type="password" id="register-password" name="password" autocomplete="new-password" required
+                    placeholder="Contraseña">
                 <div class="form-buttons">
                     <input type="submit" value="Registrarse" data-inline="true" data-theme="a">
                     <a href="#login" data-role="button" data-inline="true">Login</a>
