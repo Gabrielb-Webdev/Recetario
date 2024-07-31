@@ -212,12 +212,12 @@
             });
 
             // Cerrar sesión
-            $('#logout-button').on('click', function () {
+            $('#logout-button, #logout-button-footer').on('click', function () {
                 localStorage.removeItem('activeSession');
                 alert('Sesión cerrada.');
                 $.mobile.changePage("#login");
             });
-
+            
             // Mostrar sesión activa en consola
             if (localStorage.getItem('activeSession')) {
                 console.log('Sesión activa: ' + localStorage.getItem('activeSession'));
@@ -535,8 +535,8 @@
     <div data-role="page" id="home">
         <div data-role="header" data-position="fixed">
             <img src="imagenes/logo (2).png" alt="logo" width="90%" height="100%" class="logo">
-            <a href="#" id="logout-button" data-role="button" data-inline="true" data-icon="delete"
-                data-iconpos="notext">Cerrar sesión</a>
+            <a href="#" id="logout-button" data-role="button" data-inline="true" data-theme="a"
+                class="ui-btn-left">Cerrar sesión</a>
         </div>
         <!-- menu -->
         <div role="main" class="ui-content" id="mana">
@@ -562,7 +562,7 @@
                     </a>
                 </div>
             </div>
-            <div data-role="footer" data-position="fixed">
+            <div data-role="footer" data-position="fixed" id="footer">
                 <a href="#pop" data-role="button" data-icon="info" data-iconpos="notext" data-inline="true"
                     data-rel="popup">
                     <p>Info</p>
@@ -597,6 +597,8 @@
                         </li>
                     </ul>
                 </div>
+                <a href="#" id="logout-button-footer" data-role="button" data-inline="true" data-theme="a"
+                    class="ui-btn-center">Cerrar sesión</a>
             </div>
         </div>
     </div>

@@ -6,8 +6,8 @@ body {
 #home {
   background-image: url(imagenes/foo.jpg);
   max-width: 100%;
-  
-  
+
+
 }
 
 #desayuno {
@@ -36,10 +36,17 @@ body {
 }
 
 .header {
+  position: relative;
+  text-align: center;
   background-color: rgb(183, 234, 143);
+  padding: 0; /* Elimina cualquier padding que pueda separar el logo del borde superior */
 }
 
-
+.logo-container {
+  display: inline-block; /* Permite ajustar el tamaño del logo y mantener el centrado */
+  width: auto;
+  margin: 0; /* Asegura que no haya margen que separe el logo del borde superior */
+}
 
 .ui-page .ui-header {
   border: none;
@@ -60,14 +67,17 @@ body {
 }
 
 .logo {
-  image-orientation: center;
+  width: 100%; /* Asegura que el logo se ajuste al tamaño del contenedor */
+  max-width: 250px; /* Ajusta este valor según el tamaño deseado */
+  height: auto;
   display: block;
-
+  margin: 0 auto; /* Centra la imagen dentro del contenedor */
+  padding-top: 5px; /* Espaciado opcional si es necesario */
 }
 
 #mana {
   -webkit-background-size: cover;
-  background-size:cover;
+  background-size: cover;
   max-width: 100%;
   max-height: 100%;
 
@@ -102,7 +112,7 @@ body {
 html .ui-bar-a .ui-bar-inherit,
 html .ui-body-a .ui-bar-inherit,
 html body .ui-group-theme-a .ui-bar-inherit {
-  background-color: #70b982 ;
+  background-color: #70b982;
   border-color: #53356b;
   color: #58a05e;
   text-shadow: 0 / #444444;
@@ -110,8 +120,8 @@ html body .ui-group-theme-a .ui-bar-inherit {
 }
 
 .ui-bar-a {
-	border-width: 1px;
-	border-style: solid;
+  border-width: 1px;
+  border-style: solid;
 }
 
 .ui-btn[data-icon="carat-l"] {
@@ -636,4 +646,23 @@ html head+body .ui-body-d.ui-focus {
   -webkit-box-shadow: 0 0 12px #c477ff;
   -moz-box-shadow: 0 0 12px #c477ff;
   box-shadow: 0 0 12px #c477ff;
+}
+
+#logout-button-footer {
+  display: none; /* Ocultar el botón del footer por defecto */
+}
+
+@media screen and (max-width: 500px) {
+  #logout-button {
+      display: none; /* Ocultar el botón del header en pantallas pequeñas */
+  }
+  #logout-button-footer {
+      display: inline; /* Mostrar el botón en el footer en pantallas pequeñas */
+  }
+}
+
+@media screen and (min-width: 501px) {
+  #logout-button-footer {
+      display: none; /* Ocultar el botón del footer en pantallas grandes */
+  }
 }
