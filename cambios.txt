@@ -1,784 +1,510 @@
-Perfectooo, funciona todo de 10, ahora tengo otras cosas mas que agregar, ya que este proyecto lo tengo que alojar en alguna nube o algo similar y usar una base de datos para poder poder conectar todo de forma online y tambien que funcione con el localstorage, en resumen tengo que alojar el proyecto en un hosting que me permita usar base de datos y que el proyecto funcione con eso y aparte que funcione tambien con el localstorage, tengo domiminio gratuito en el hosting de hostinger, entonces necesito que me des el paso a paso para poder crea la base de datos, el dominio gratuito es este palegreen-mandrill-927363.hostingersite.com asi que vamos a crear primero la base de datos, dame todo paso a paso.
-Necesito que guarde todo lo que guarda el localStorage asi que te paso primero esto para que determines que cosas guarda
-<!DOCTYPE html>
-<html lang="es">
+$(document).on("pageinit", function () {
+    $.mobile.defaultPageTransition = "slide";
+    $.mobile.defaultDialogTransition = "slidedown";
+});
 
-<head>
-    <meta charset="UTF-8">
-    <title>Mi Recetario Personal</title>
-    <link rel="icon" href="imagenes/logo.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.css">
-    <script src="jqm/jquery-1.12.3.min.js"></script>
-    <script src="jqm/jquery.mobile-1.4.5.js"></script>
-    <link rel="stylesheet" href="estilos.css">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Josefin+Sans:wght@450&display=swap"
-        rel="stylesheet">
-    <style>
-        .nota {
-            background-color: rgb(143, 11, 11);
-            color: white;
-            border: 4px solid rgb(168, 58, 58);
-            padding: 18px;
-            position: relative;
-            margin: 10px 0;
-            text-shadow: none;
-            box-shadow: 2px 2px rgb(0, 0, 0, .3);
-            border-radius: 30px;
-        }
+// Función para cargar notas
+function cargarNotas(tipo, contenedor, claseNota) {
+    var usuario_id = localStorage.getItem('activeSession');
 
-        .nota2 {
-            background-color: rgb(139, 196, 146);
-            color: white;
-            border: 4px solid rgb(84, 197, 137);
-            padding: 18px;
-            position: relative;
-            margin: 10px 0;
-            text-shadow: none;
-            box-shadow: 2px 2px rgb(0, 0, 0, .3);
-            border-radius: 30px;
-        }
+    $.post('database/get_notes.php', { usuario_id: usuario_id }, function (data) {
+        var recuperados_array = JSON.parse(data);
+        $(contenedor).empty();
+        $.each(recuperados_array, function (indice, valor) {
+            if (valor.tipo === tipo) {
+                var nota = $('<div></div>');
+                nota.attr('class', claseNota)
+                    .attr('data-id', valor.id)
+                    .attr('data-cumplido', valor.cumplido ? 'si' : 'no')
+                    .append('<a href="#" class="check"><img src="imagenes/a.png" alt="a"></a>')
+                    .append('<a href="#" class="edit"><img src="imagenes/b.png" alt="b"></a>')
+                    .append('<a href="#" class="delete"><img src="imagenes/c.png" alt="c"></a>')
+                    .append('<h3>' + valor.titulo + '</h3>')
+                    .append('<p>' + valor.contenido + '</p>');
 
-        .nota3 {
-            background-color: rgb(48, 79, 190);
-            color: white;
-            border: 4px solid rgb(49, 79, 190);
-            padding: 18px;
-            position: relative;
-            margin: 10px 0;
-            text-shadow: none;
-            box-shadow: 2px 2px rgb(0, 0, 0, .3);
-            border-radius: 30px;
-        }
+                if (valor.cumplido) {
+                    nota.css({ backgroundColor: "green", color: "white" });
+                }
 
-        .nota4 {
-            background-color: rgb(230, 88, 204);
-            color: white;
-            border: 4px solid rgb(231, 88, 204);
-            padding: 18px;
-            position: relative;
-            margin: 10px 0;
-            text-shadow: none;
-            box-shadow: 2px 2px rgb(0, 0, 0, .3);
-            border-radius: 30px;
-        }
-
-        .check {
-            position: absolute;
-            background-color: rgb(43, 226, 83);
-            padding: 7px;
-            border-radius: 50%;
-            line-height: 0;
-            top: 20px;
-            right: 118px;
-        }
-
-        .edit {
-            position: absolute;
-            padding: 7px;
-            border-radius: 50%;
-            line-height: 0;
-            background: rgb(255, 255, 0);
-            top: 20px;
-            right: 60px;
-        }
-
-        .delete {
-            position: absolute;
-            padding: 7px;
-            border-radius: 50%;
-            line-height: 0;
-            background: rgb(255, 0, 0);
-            top: 20px;
-            right: 8px;
-        }
-
-        .form-buttons {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-buttons a,
-        .form-buttons input {
-            margin-bottom: 10px;
-        }
-    </style>
-    <script>
-        $(document).on("pageinit", function () {
-            $.mobile.defaultPageTransition = "slide";
-            $.mobile.defaultDialogTransition = "slidedown";
+                $(contenedor).append(nota);
+            }
         });
+        // Guardar en localStorage si hay conexión
+        localStorage.setItem(tipo, JSON.stringify(recuperados_array));
+    }).fail(function () {
+        // Si falla, cargar desde localStorage
+        var localNotas = JSON.parse(localStorage.getItem(tipo)) || [];
+        $(contenedor).empty();
+        if (localNotas) {
+            $.each(localNotas, function (indice, valor) {
+                var nota = $('<div></div>');
+                nota.attr('class', claseNota)
+                    .attr('data-id', valor.id)
+                    .attr('data-cumplido', valor.cumplido ? 'si' : 'no')
+                    .append('<a href="#" class="check"><img src="imagenes/a.png" alt="a"></a>')
+                    .append('<a href="#" class="edit"><img src="imagenes/b.png" alt="b"></a>')
+                    .append('<a href="#" class="delete"><img src="imagenes/c.png" alt="c"></a>')
+                    .append('<h3>' + valor.titulo + '</h3>')
+                    .append('<p>' + valor.contenido + '</p>');
 
-        function cargarNotas(tipo, contenedor, claseNota) {
-            var recuperados_json = localStorage.getItem("notas");
-            var usuario = localStorage.getItem('activeSession');
-            if (recuperados_json) {
-                var recuperados_array = JSON.parse(recuperados_json);
-                $(contenedor).empty();
-                $.each(recuperados_array, function (indice, valor) {
-                    if (valor.tipo === tipo && valor.usuario === usuario) {
-                        var nota = $('<div></div>');
-                        nota.attr('class', claseNota)
-                            .attr('data-cumplido', valor.cumplido ? 'si' : 'no')
-                            .append('<a href="#" class="check"><img src="imagenes/a.png" alt="a"></a>')
-                            .append('<a href="#" class="edit"><img src="imagenes/b.png" alt="b"></a>')
-                            .append('<a href="#" class="delete"><img src="imagenes/c.png" alt="c"></a>')
-                            .append('<h3>' + valor.titulo + '</h3>')
-                            .append('<p>' + valor.contenido + '</p>');
-
-                        if (valor.cumplido) {
-                            nota.css({ backgroundColor: "green", color: "white" });
-                        }
-
-                        $(contenedor).append(nota);
-                    }
-                });
-            }
-        }
-
-        function guardarNota(nuevaNota) {
-            var notas = localStorage.getItem("notas");
-            if (!notas) {
-                notas = [];
-            } else {
-                notas = JSON.parse(notas);
-            }
-            notas.push(nuevaNota);
-            localStorage.setItem("notas", JSON.stringify(notas));
-            cargarNotas(nuevaNota.tipo, '#notas', 'nota');
-        }
-
-        function guardarNotasActualizadas(tipo, contenedor, claseNota) {
-            var notas_actuales = [];
-            $(contenedor + ' .' + claseNota).each(function () {
-                var nota = {
-                    usuario: localStorage.getItem('activeSession'),
-                    tipo: tipo,
-                    titulo: $(this).find('h3').text(),
-                    contenido: $(this).find('p').text(),
-                    cumplido: $(this).attr('data-cumplido') === 'si' ? true : false
-                };
-                notas_actuales.push(nota);
-            });
-
-            var todasNotas = JSON.parse(localStorage.getItem("notas")) || [];
-            todasNotas = todasNotas.filter(nota => nota.tipo !== tipo || nota.usuario !== localStorage.getItem('activeSession')).concat(notas_actuales);
-            localStorage.setItem("notas", JSON.stringify(todasNotas));
-        }
-
-        $(document).ready(function () {
-            $.mobile.page.prototype.options.backBtnText = "Volver";
-            $.mobile.page.prototype.options.addBackBtn = true;
-            $.mobile.page.prototype.options.backBtnTheme = "d";
-
-            // Manejar la clase personalizada para la transición
-            $(document).on("click", ".back-right", function (e) {
-                e.preventDefault();
-                var link = $(this).attr("href");
-                $.mobile.changePage(link, { transition: "slide", reverse: true });
-            });
-
-            // Registro de usuario
-            $('#register-form').on('submit', function (e) {
-                e.preventDefault();
-                var username = $('#register-username').val();
-                var password = $('#register-password').val();
-
-                if (localStorage.getItem(username)) {
-                    alert('Usuario ya registrado.');
-                } else {
-                    localStorage.setItem(username, password);
-                    alert('Registro exitoso.');
-                    $.mobile.changePage("#login");
+                if (valor.cumplido) {
+                    nota.css({ backgroundColor: "green", color: "white" });
                 }
+
+                $(contenedor).append(nota);
             });
+        }
+    });
+}
 
-            // Login de usuario
-            $('#login-form').on('submit', function (e) {
-                e.preventDefault();
-                var username = $('#login-username').val();
-                var password = $('#login-password').val();
+// Función para guardar una nota
+function guardarNota(nuevaNota, tipo, contenedor, claseNota) {
+    $.post('database/save_note.php', nuevaNota, function (data) {
+        console.log(data);
+        cargarNotas(nuevaNota.tipo, contenedor, claseNota);
+    }).fail(function () {
+        // Guardar en localStorage si falla la conexión
+        var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+        notasPendientes.push(nuevaNota);
+        localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+        alert('Nota guardada localmente. Se sincronizará cuando haya conexión.');
 
-                if (localStorage.getItem(username) === password) {
-                    alert('Login exitoso.');
-                    localStorage.setItem('activeSession', username);
-                    console.log('Sesión activa: ' + username);
-                    $.mobile.changePage("#home");
-                    cargarNotas('desayuno', '#notas', 'nota'); // Cargar notas de desayuno al iniciar sesión
-                    cargarNotas('almuerzo', '#notas2', 'nota2'); // Cargar notas de almuerzo al iniciar sesión
-                    cargarNotas('merienda', '#notas3', 'nota3'); // Cargar notas de merienda al iniciar sesión
-                    cargarNotas('cena', '#notas4', 'nota4'); // Cargar notas de cena al iniciar sesión
-                } else {
-                    alert('Datos incorrectos.');
-                }
-            });
+        // Guardar en localStorage para visualización offline
+        var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+        notasLocales.push(nuevaNota);
+        localStorage.setItem(tipo, JSON.stringify(notasLocales));
+        cargarNotas(tipo, contenedor, claseNota);
+    });
+}
 
-            // Cerrar sesión
-            $('#logout-button, #logout-button-footer').on('click', function () {
-                localStorage.removeItem('activeSession');
-                alert('Sesión cerrada.');
+// Función para sincronizar notas
+function sincronizarNotas() {
+    var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+    $.each(notasPendientes, function (indice, nota) {
+        $.post('database/save_note.php', nota, function (data) {
+            console.log('Nota sincronizada:', data);
+            // Eliminar la nota sincronizada del array local
+            notasPendientes.splice(indice, 1);
+            localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+        }).fail(function () {
+            console.log('Fallo al sincronizar la nota:', nota);
+        });
+    });
+}
+
+// Función para verificar y sincronizar cuando hay conexión
+function verificarConexion() {
+    $.get('database/check_connection.php', function (data) {
+        if (data === 'conectado') {
+            sincronizarNotas();
+        }
+    }).fail(function () {
+        console.log('Sin conexión con el servidor');
+    });
+}
+
+// Verificar la conexión cada 10 segundos
+setInterval(verificarConexion, 10000);
+
+$(document).ready(function () {
+    $.mobile.page.prototype.options.backBtnText = "Volver";
+    $.mobile.page.prototype.options.addBackBtn = true;
+    $.mobile.page.prototype.options.backBtnTheme = "d";
+
+    // Sincronizar notas al inicio
+    sincronizarNotas();
+
+    // Cargar notas desde el servidor o localStorage
+    if (localStorage.getItem('activeSession')) {
+        console.log('Sesión activa: ' + localStorage.getItem('activeSession'));
+        cargarNotas('desayuno', '#notas', 'nota');
+        cargarNotas('almuerzo', '#notas2', 'nota2');
+        cargarNotas('merienda', '#notas3', 'nota3');
+        cargarNotas('cena', '#notas4', 'nota4');
+    }
+
+    // Registro de usuario
+    $('#register-form').on('submit', function (e) {
+        e.preventDefault();
+        var username = $('#register-username').val();
+        var password = $('#register-password').val();
+
+        $.post('database/register.php', { username: username, password: password }, function (data) {
+            alert(data);
+            if (data === "Registro exitoso") {
+                // Guardar en localStorage
+                localStorage.setItem('user_' + username, JSON.stringify({ username: username, password: password }));
                 $.mobile.changePage("#login");
-            });
-            
-            // Mostrar sesión activa en consola
-            if (localStorage.getItem('activeSession')) {
-                console.log('Sesión activa: ' + localStorage.getItem('activeSession'));
-                cargarNotas('desayuno', '#notas', 'nota'); // Cargar notas al cargar la página si hay una sesión activa
-                cargarNotas('almuerzo', '#notas2', 'nota2'); // Cargar notas al cargar la página si hay una sesión activa
-                cargarNotas('merienda', '#notas3', 'nota3'); // Cargar notas al cargar la página si hay una sesión activa
-                cargarNotas('cena', '#notas4', 'nota4'); // Cargar notas al cargar la página si hay una sesión activa
             }
-
-            // Evento para añadir nueva receta de Desayuno
-            $('#agregar form').on('submit', function () {
-                var titulo = $('#titulo').val();
-                var contenido = $('#contenido').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota = {
-                    usuario: usuario,
-                    tipo: 'desayuno',
-                    titulo: titulo,
-                    contenido: contenido,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota);
-                $.mobile.navigate('#desayuno');
-                return false;
-            });
-
-            // Evento para añadir nueva receta de Almuerzo
-            $('#agregar2 form').on('submit', function () {
-                var titulo2 = $('#titulo2').val();
-                var contenido2 = $('#contenido2').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota2 = {
-                    usuario: usuario,
-                    tipo: 'almuerzo',
-                    titulo: titulo2,
-                    contenido: contenido2,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota2);
-                $.mobile.navigate('#almuerzo');
-                cargarNotas('almuerzo', '#notas2', 'nota2'); // Cargar notas de almuerzo inmediatamente
-                return false;
-            });
-
-            // Evento para añadir nueva receta de Merienda
-            $('#agregar3 form').on('submit', function () {
-                var titulo3 = $('#titulo3').val();
-                var contenido3 = $('#contenido3').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota3 = {
-                    usuario: usuario,
-                    tipo: 'merienda',
-                    titulo: titulo3,
-                    contenido: contenido3,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota3);
-                $.mobile.navigate('#merienda');
-                cargarNotas('merienda', '#notas3', 'nota3'); // Cargar notas de merienda inmediatamente
-                return false;
-            });
-
-            // Evento para añadir nueva receta de Cena
-            $('#agregar4 form').on('submit', function () {
-                var titulo4 = $('#titulo4').val();
-                var contenido4 = $('#contenido4').val();
-                var usuario = localStorage.getItem('activeSession');
-                var nuevaNota4 = {
-                    usuario: usuario,
-                    tipo: 'cena',
-                    titulo: titulo4,
-                    contenido: contenido4,
-                    cumplido: false
-                };
-                guardarNota(nuevaNota4);
-                $.mobile.navigate('#cena');
-                cargarNotas('cena', '#notas4', 'nota4'); // Cargar notas de cena inmediatamente
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de desayuno
-            $('#notas').on("click", ".nota .delete", function () {
-                var eliminar_nota = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('desayuno', '#notas', 'nota');
-                }
-            });
-
-            $('#notas').on("click", ".nota .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('desayuno', '#notas', 'nota');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('desayuno', '#notas', 'nota');
-                }
-            });
-
-            $('#notas').on("click", ".nota .edit", function () {
-                var titulo_actual = $(this).parent().children("h3").text();
-                var contenido_actual = $(this).parent().children("p").text();
-                $('#modifica_titulo').val(titulo_actual);
-                $('#modifica_contenido').val(contenido_actual);
-                $(this).parent().attr("data-modificando", "este");
-                $.mobile.navigate('#modificar');
-            });
-
-            $('#modificar form').on("submit", function () {
-                var titulo_modificado = $('#modifica_titulo').val();
-                var contenido_modificado = $('#modifica_contenido').val();
-                var modificando = $('#notas').find("[data-modificando]");
-                modificando.children('h3').text(titulo_modificado);
-                modificando.children('p').text(contenido_modificado);
-                modificando.removeAttr("data-modificando");
-                guardarNotasActualizadas('desayuno', '#notas', 'nota');
-
-                $.mobile.navigate("#desayuno");
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de almuerzo
-            $('#notas2').on("click", ".nota2 .delete", function () {
-                var eliminar_nota2 = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota2) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-                }
-            });
-
-            $('#notas2').on("click", ".nota2 .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-                }
-            });
-
-            $('#notas2').on("click", ".nota2 .edit", function () {
-                var titulo_actual2 = $(this).parent().children("h3").text();
-                var contenido_actual2 = $(this).parent().children("p").text();
-                $('#modifica_titulo2').val(titulo_actual2);
-                $('#modifica_contenido2').val(contenido_actual2);
-                $(this).parent().attr("data-modificando", "este2");
-                $.mobile.navigate('#modificar2');
-            });
-
-            $('#modificar2 form').on("submit", function () {
-                var titulo_modificado2 = $('#modifica_titulo2').val();
-                var contenido_modificado2 = $('#modifica_contenido2').val();
-                var modificando2 = $('#notas2').find("[data-modificando]");
-                modificando2.children('h3').text(titulo_modificado2);
-                modificando2.children('p').text(contenido_modificado2);
-                modificando2.removeAttr("data-modificando");
-                guardarNotasActualizadas('almuerzo', '#notas2', 'nota2');
-
-                $.mobile.navigate("#almuerzo");
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de merienda
-            $('#notas3').on("click", ".nota3 .delete", function () {
-                var eliminar_nota3 = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota3) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-                }
-            });
-
-            $('#notas3').on("click", ".nota3 .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-                }
-            });
-
-            $('#notas3').on("click", ".nota3 .edit", function () {
-                var titulo_actual3 = $(this).parent().children("h3").text();
-                var contenido_actual3 = $(this).parent().children("p").text();
-                $('#modifica_titulo3').val(titulo_actual3);
-                $('#modifica_contenido3').val(contenido_actual3);
-                $(this).parent().attr("data-modificando", "este3");
-                $.mobile.navigate('#modificar3');
-            });
-
-            $('#modificar3 form').on("submit", function () {
-                var titulo_modificado3 = $('#modifica_titulo3').val();
-                var contenido_modificado3 = $('#modifica_contenido3').val();
-                var modificando3 = $('#notas3').find("[data-modificando]");
-                modificando3.children('h3').text(titulo_modificado3);
-                modificando3.children('p').text(contenido_modificado3);
-                modificando3.removeAttr("data-modificando");
-                guardarNotasActualizadas('merienda', '#notas3', 'nota3');
-
-                $.mobile.navigate("#merienda");
-                return false;
-            });
-
-            // Eventos para manejar la edición y eliminación de notas de cena
-            $('#notas4').on("click", ".nota4 .delete", function () {
-                var eliminar_nota4 = confirm("¿Estás seguro que deseas eliminar la receta?");
-                if (eliminar_nota4) {
-                    $(this).parent().remove();
-                    guardarNotasActualizadas('cena', '#notas4', 'nota4');
-                }
-            });
-
-            $('#notas4').on("click", ".nota4 .check", function () {
-                if ($(this).next().next().next().attr("data-cumplido") != "si") {
-                    $(this).parent().css({
-                        backgroundColor: "white",
-                        color: "green"
-                    });
-                    $(this).next().next().next().attr("data-cumplido", "si");
-                    guardarNotasActualizadas('cena', '#notas4', 'nota4');
-                } else {
-                    $(this).parent().css({
-                        backgroundColor: "green",
-                        color: "white"
-                    });
-                    $(this).next().next().next().removeAttr("data-cumplido");
-                    guardarNotasActualizadas('cena', '#notas4', 'nota4');
-                }
-            });
-
-            $('#notas4').on("click", ".nota4 .edit", function () {
-                var titulo_actual4 = $(this).parent().children("h3").text();
-                var contenido_actual4 = $(this).parent().children("p").text();
-                $('#modifica_titulo4').val(titulo_actual4);
-                $('#modifica_contenido4').val(contenido_actual4);
-                $(this).parent().attr("data-modificando", "este4");
-                $.mobile.navigate('#modificar4');
-            });
-
-            $('#modificar4 form').on("submit", function () {
-                var titulo_modificado4 = $('#modifica_titulo4').val();
-                var contenido_modificado4 = $('#modifica_contenido4').val();
-                var modificando4 = $('#notas4').find("[data-modificando]");
-                modificando4.children('h3').text(titulo_modificado4);
-                modificando4.children('p').text(contenido_modificado4);
-                modificando4.removeAttr("data-modificando");
-                guardarNotasActualizadas('cena', '#notas4', 'nota4');
-
-                $.mobile.navigate("#cena");
-                return false;
-            });
+        }).fail(function () {
+            // Guardar en localStorage si falla la conexión
+            localStorage.setItem('user_' + username, JSON.stringify({ username: username, password: password }));
+            alert('Usuario registrado localmente. Se sincronizará cuando haya conexión.');
         });
-    </script>
-</head>
+    });
 
-<body>
-    <!-- Login -->
-    <div data-role="page" id="login" data-theme="b">
-        <div data-role="header">
-            <h1>Login</h1>
-        </div>
-        <div role="main" class="ui-content">
-            <form id="login-form">
-                <input type="text" id="login-username" required placeholder="Nombre de usuario">
-                <input type="password" id="login-password" required placeholder="Contraseña">
-                <div class="form-buttons">
-                    <input type="submit" value="Login" data-inline="true" data-theme="a">
-                    <a href="#register" data-role="button" data-inline="true">Registrarse</a>
-                </div>
-            </form>
-        </div>
-    </div>
+    // Login de usuario
+    $('#login-form').on('submit', function (e) {
+        e.preventDefault();
+        var username = $('#login-username').val();
+        var password = $('#login-password').val();
 
-    <!-- Registro -->
-    <div data-role="page" id="register" data-theme="b">
-        <div data-role="header">
-            <h1>Registrarse</h1>
-        </div>
-        <div role="main" class="ui-content">
-            <form id="register-form">
-                <input type="text" id="register-username" required placeholder="Nombre de usuario">
-                <input type="password" id="register-password" required placeholder="Contraseña">
-                <div class="form-buttons">
-                    <input type="submit" value="Registrarse" data-inline="true" data-theme="a">
-                    <a href="#login" data-role="button" data-inline="true">Login</a>
-                </div>
-            </form>
-        </div>
-    </div>
+        $.post('database/login.php', { username: username, password: password }, function (data) {
+            var response = JSON.parse(data);
+            if (response.status === "success") {
+                localStorage.setItem('activeSession', response.user_id);
+                alert('Login exitoso.');
+                $.mobile.changePage("#home");
+                cargarNotas('desayuno', '#notas', 'nota');
+                cargarNotas('almuerzo', '#notas2', 'nota2');
+                cargarNotas('merienda', '#notas3', 'nota3');
+                cargarNotas('cena', '#notas4', 'nota4');
+            } else {
+                alert(response.message);
+            }
+        }).fail(function () {
+            var user = JSON.parse(localStorage.getItem('user_' + username));
+            if (user && user.password === password) {
+                alert('Login exitoso (modo offline).');
+                localStorage.setItem('activeSession', username); // Usar el nombre de usuario como session en modo offline
+                $.mobile.changePage("#home");
+                cargarNotas('desayuno', '#notas', 'nota');
+                cargarNotas('almuerzo', '#notas2', 'nota2');
+                cargarNotas('merienda', '#notas3', 'nota3');
+                cargarNotas('cena', '#notas4', 'nota4');
+            } else {
+                alert('Login fallido (modo offline).');
+            }
+        });
+    });
 
-    <div data-role="page" id="home">
-        <div data-role="header" data-position="fixed">
-            <img src="imagenes/logo (2).png" alt="logo" width="90%" height="100%" class="logo">
-            <a href="#" id="logout-button" data-role="button" data-inline="true" data-theme="a"
-                class="ui-btn-left">Cerrar sesión</a>
-        </div>
-        <!-- menu -->
-        <div role="main" class="ui-content" id="mana">
-            <div class="ui-grid-a">
-                <div class="ui-block-a">
-                    <a href="#desayuno">
-                        <img src="imagenes/desayuno.jpg" alt="icono grid">
-                    </a>
-                </div>
-                <div class="ui-block-b">
-                    <a href="#almuerzo">
-                        <img src="imagenes/almuerzo.jpg" alt="icono grid">
-                    </a>
-                </div>
-                <div class="ui-block-a">
-                    <a href="#merienda">
-                        <img src="imagenes/merienda.jpg" alt="icono grid">
-                    </a>
-                </div>
-                <div class="ui-block-b">
-                    <a href="#cena">
-                        <img src="imagenes/cena.jpg" alt="icono grid">
-                    </a>
-                </div>
-            </div>
-            <div data-role="footer" data-position="fixed" id="footer">
-                <a href="#pop" data-role="button" data-icon="info" data-iconpos="notext" data-inline="true"
-                    data-rel="popup">
-                    <p>Info</p>
-                </a>
-                <div id="pop" data-role="popup" data-overlay-theme="b" data-history="false" data-corners="false"
-                    class="ui-content" data-transition="slidedown">
-                    <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext"
-                        class="ui-btn-right" data-theme="b" data-direction="reverse"
-                        data-transition="slidedown">Cerrar</a>
-                    <ul data-role="listview">
-                        <li data-role="list-divider" data-theme="b">Desarrollo de Aplicaciones Multiplataforma</li>
-                        <li>
-                            <a href="#">
-                                <img src="imagenes/aix.png" alt="aixa"
-                                    style="border-radius: 50%; width: 60px; margin: 10px; box-shadow: rgba(0, 0, 0, .5) 2px 2px 0px;">
-                                <h3>AIXA CALCAGNO <br><br></h3>
-                                <p>CURSO: DMT5BV</p>
-                                <span class="ui-li-count">TARDE</span>
-                            </a>
-                            <a href="mailto:aixa.calcagno@davinci.edu.ar">mail</a>
-                        </li>
-                        <li data-role="list-divider" data-theme="b"></li>
-                        <li>
-                            <a href="#">
-                                <img src="imagenes/noe.png" alt="corona virus"
-                                    style="border-radius: 50%; width: 60px; margin: 10px; box-shadow: rgba(0, 0, 0, .4) 2px 2px 0px;">
-                                <h3>NOELIA NOVO <br><br></h3>
-                                <p>Divergente</p>
-                                <span class="ui-li-count">TARDE</span>
-                            </a>
-                            <a href="mailto:noelia.novo@davinci.edu.ar">mail</a>
-                        </li>
-                    </ul>
-                </div>
-                <a href="#" id="logout-button-footer" data-role="button" data-inline="true" data-theme="a"
-                    class="ui-btn-center">Cerrar sesión</a>
-            </div>
-        </div>
-    </div>
-    <!-- fin de menu -->
+    // Cerrar sesión
+    $('#logout-button, #logout-button-footer').on('click', function () {
+        localStorage.removeItem('activeSession');
+        alert('Sesión cerrada.');
+        $.mobile.changePage("#login");
+    });
 
-    <!-- Desayuno -->
-    <div data-role="page" id="desayuno" data-theme="b">
-        <div data-role="header">
-            <h1>Desayunos</h1>
-            <a href="#home" data-role="button" data-inline="true" class="back-right">Volver</a>
-            <a href="#agregar">Agregar</a>
-        </div>
-        <div role="main" class="ui-content">
-            <div id="notas"></div>
-        </div>
-    </div>
+    // Evento para añadir nueva receta de Desayuno
+    $('#agregar form').on('submit', function () {
+        var titulo = $('#titulo').val();
+        var contenido = $('#contenido').val();
+        var usuario = localStorage.getItem('activeSession');
+        var nuevaNota = {
+            usuario_id: usuario,
+            tipo: 'desayuno',
+            titulo: titulo,
+            contenido: contenido,
+            cumplido: false
+        };
+        guardarNota(nuevaNota, 'desayuno', '#notas', 'nota');
+        $.mobile.navigate('#desayuno');
+        return false;
+    });
 
-    <!-- agregar nota nueva -->
-    <div data-role="page" id="agregar" data-theme="b">
-        <div data-role="header">
-            <h1>Nuevo Desayuno</h1>
-            <a href="#" data-rel="back">Volver</a>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="titulo" required placeholder="El título de la receta va acá...">
-                <input type="text" id="contenido" required placeholder="Tu receta va acá...">
-                <a href="#" class="botonesedit" data-role="button" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="a">
-            </form>
-        </div>
-    </div>
+    // Evento para añadir nueva receta de Almuerzo
+    $('#agregar2 form').on('submit', function () {
+        var titulo2 = $('#titulo2').val();
+        var contenido2 = $('#contenido2').val();
+        var usuario = localStorage.getItem('activeSession');
+        var nuevaNota2 = {
+            usuario_id: usuario,
+            tipo: 'almuerzo',
+            titulo: titulo2,
+            contenido: contenido2,
+            cumplido: false
+        };
+        guardarNota(nuevaNota2, 'almuerzo', '#notas2', 'nota2');
+        $.mobile.navigate('#almuerzo');
+        cargarNotas('almuerzo', '#notas2', 'nota2');
+        return false;
+    });
 
-    <!-- modificar receta -->
-    <div data-role="page" id="modificar" data-theme="b">
-        <div data-role="header">
-            <h1>Modificar Receta</h1>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="modifica_titulo" required placeholder="El título de la receta va acá...">
-                <input type="text" id="modifica_contenido" required placeholder="Tu receta va acá...">
-                <a href="#" data-role="button" class="botonesedit" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="a">
-            </form>
-        </div>
-    </div>
+    // Evento para añadir nueva receta de Merienda
+    $('#agregar3 form').on('submit', function () {
+        var titulo3 = $('#titulo3').val();
+        var contenido3 = $('#contenido3').val();
+        var usuario = localStorage.getItem('activeSession');
+        var nuevaNota3 = {
+            usuario_id: usuario,
+            tipo: 'merienda',
+            titulo: titulo3,
+            contenido: contenido3,
+            cumplido: false
+        };
+        guardarNota(nuevaNota3, 'merienda', '#notas3', 'nota3');
+        $.mobile.navigate('#merienda');
+        cargarNotas('merienda', '#notas3', 'nota3');
+        return false;
+    });
 
-    <!-- Almuerzo -->
-    <div data-role="page" id="almuerzo">
-        <div data-role="header">
-            <h1>Almuerzos</h1>
-            <a href="#home" data-role="button" data-inline="true" class="back-right">Volver</a>
-            <a href="#agregar2">Agregar</a>
-        </div>
-        <div role="main" class="ui-content">
-            <div id="notas2"></div>
-        </div>
-    </div>
+    // Evento para añadir nueva receta de Cena
+    $('#agregar4 form').on('submit', function () {
+        var titulo4 = $('#titulo4').val();
+        var contenido4 = $('#contenido4').val();
+        var usuario = localStorage.getItem('activeSession');
+        var nuevaNota4 = {
+            usuario_id: usuario,
+            tipo: 'cena',
+            titulo: titulo4,
+            contenido: contenido4,
+            cumplido: false
+        };
+        guardarNota(nuevaNota4, 'cena', '#notas4', 'nota4');
+        $.mobile.navigate('#cena');
+        cargarNotas('cena', '#notas4', 'nota4');
+        return false;
+    });
 
-    <!-- agregar nota nueva -->
-    <div data-role="page" id="agregar2">
-        <div data-role="header">
-            <h1>Nuevo Almuerzo</h1>
-            <a href="#" data-rel="back">Volver</a>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="titulo2" required placeholder="El titulo de la receta va acá...">
-                <input type="text" id="contenido2" required placeholder="Tu receta va acá...">
-                <a href="#" class="botonesedit" data-role="button" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="a">
-            </form>
-        </div>
-    </div>
+    // Eventos para manejar la edición de notas de desayuno
+    $('#notas').on("click", ".nota .edit", function () {
+        var titulo_actual = $(this).parent().children("h3").text();
+        var contenido_actual = $(this).parent().children("p").text();
+        var notaId = $(this).parent().data('id');
+        $('#modifica_titulo').val(titulo_actual);
+        $('#modifica_contenido').val(contenido_actual);
+        $('#modifica_id').val(notaId);
+        $(this).parent().attr("data-modificando", "este");
+        $.mobile.navigate('#modificar');
+    });
 
-    <!-- modificar receta -->
-    <div data-role="page" id="modificar2">
-        <div data-role="header">
-            <h1>Modificar Receta</h1>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="modifica_titulo2" required placeholder="El título de la receta va acá...">
-                <input type="text" id="modifica_contenido2" required placeholder="Tu receta va acá...">
-                <a href="#" data-role="button" class="botonesedit" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="b">
-            </form>
-        </div>
-    </div>
+    $('#modificar form').on("submit", function () {
+        var titulo_modificado = $('#modifica_titulo').val();
+        var contenido_modificado = $('#modifica_contenido').val();
+        var usuario = localStorage.getItem('activeSession');
+        var notaId = $('#modifica_id').val();
+        var modificando = $('#notas').find("[data-modificando]");
+        var tipo = 'desayuno';
 
-    <!-- Merienda -->
-    <div data-role="page" id="merienda" data-theme="c">
-        <div data-role="header">
-            <h1>Merienda</h1>
-            <a href="#home" data-role="button" data-inline="true" class="back-right">Volver</a>
-            <a href="#agregar3">Agregar</a>
-        </div>
-        <div role="main" class="ui-content">
-            <div id="notas3"></div>
-        </div>
-    </div>
+        var notaActualizada = {
+            id: notaId,
+            usuario_id: usuario,
+            tipo: tipo,
+            titulo: titulo_modificado,
+            contenido: contenido_modificado,
+            cumplido: modificando.data('cumplido') === 'si' ? 1 : 0
+        };
 
-    <!-- agregar nota nueva -->
-    <div data-role="page" id="agregar3" data-theme="c">
-        <div data-role="header">
-            <h1>Nueva Merienda</h1>
-            <a href="#" data-rel="back">Volver</a>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="titulo3" required placeholder="El título de la receta va acá...">
-                <input type="text" id="contenido3" required placeholder="Tu receta va acá...">
-                <a href="#" class="botonesedit" data-role="button" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="a">
-            </form>
-        </div>
-    </div>
+        $.post('database/update_note.php', notaActualizada, function (data) {
+            alert(data);
+            modificando.removeAttr("data-modificando");
+            cargarNotas(tipo, '#notas', 'nota');
+            $.mobile.navigate("#desayuno");
+        }).fail(function () {
+            // Guardar en localStorage si falla la conexión
+            var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+            notasPendientes.push(notaActualizada);
+            localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+            alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
 
-    <!-- modificar receta -->
-    <div data-role="page" id="modificar3" data-theme="c">
-        <div data-role="header">
-            <h1>Modificar Receta</h1>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="modifica_titulo3" required placeholder="El título de la receta va acá...">
-                <input type="text" id="modifica_contenido3" required placeholder="El contenido de la receta va acá...">
-                <a href="#" data-role="button" class="botonesedit" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="b">
-            </form>
-        </div>
-    </div>
+            // Actualizar en localStorage
+            var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+            var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
+            if (notaIndex > -1) {
+                notasLocales[notaIndex] = notaActualizada;
+            } else {
+                notasLocales.push(notaActualizada);
+            }
+            localStorage.setItem(tipo, JSON.stringify(notasLocales));
+            cargarNotas(tipo, '#notas', 'nota');
+        });
 
-    <!-- Cena -->
-    <div data-role="page" id="cena" data-theme="d">
-        <div data-role="header">
-            <h1>Cena</h1>
-            <a href="#home" data-role="button" data-inline="true" class="back-right">Volver</a>
-            <a href="#agregar4">Agregar</a>
-        </div>
-        <div role="main" class="ui-content">
-            <div id="notas4"></div>
-        </div>
-    </div>
+        return false;
+    });
 
-    <!-- agregar nota nueva -->
-    <div data-role="page" id="agregar4" data-theme="d">
-        <div data-role="header">
-            <h1>Nueva Cena</h1>
-            <a href="#" data-rel="back">Volver</a>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="titulo4" required placeholder="El título de la receta va acá...">
-                <input type="text" id="contenido4" required placeholder="Tu receta va acá...">
-                <a href="#" class="botonesedit" data-role="button" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="a">
-            </form>
-        </div>
-    </div>
+    // Eventos para manejar la edición de notas de almuerzo
+    $('#notas2').on("click", ".nota2 .edit", function () {
+        var titulo_actual2 = $(this).parent().children("h3").text();
+        var contenido_actual2 = $(this).parent().children("p").text();
+        var notaId = $(this).parent().data('id');
+        $('#modifica_titulo2').val(titulo_actual2);
+        $('#modifica_contenido2').val(contenido_actual2);
+        $('#modifica_id2').val(notaId);
+        $(this).parent().attr("data-modificando", "este2");
+        $.mobile.navigate('#modificar2');
+    });
 
-    <!-- modificar receta -->
-    <div data-role="page" id="modificar4" data-theme="d">
-        <div data-role="header">
-            <h1>Modificar Receta</h1>
-        </div>
-        <div role="main" class="ui-content">
-            <form>
-                <input type="text" id="modifica_titulo4" required placeholder="El título de la receta va acá...">
-                <input type="text" id="modifica_contenido4" required placeholder="El contenido de la receta va acá...">
-                <a href="#" data-role="button" class="botonesedit" data-inline="true" data-rel="back">Cancelar</a>
-                <input type="submit" value="Guardar" data-inline="true" data-theme="b">
-            </form>
-        </div>
-    </div>
+    $('#modificar2 form').on("submit", function () {
+        var titulo_modificado2 = $('#modifica_titulo2').val();
+        var contenido_modificado2 = $('#modifica_contenido2').val();
+        var usuario = localStorage.getItem('activeSession');
+        var notaId = $('#modifica_id2').val();
+        var modificando2 = $('#notas2').find("[data-modificando]");
+        var tipo = 'almuerzo';
 
+        var notaActualizada2 = {
+            id: notaId,
+            usuario_id: usuario,
+            tipo: tipo,
+            titulo: titulo_modificado2,
+            contenido: contenido_modificado2,
+            cumplido: modificando2.data('cumplido') === 'si' ? 1 : 0
+        };
 
-</body>
+        $.post('database/update_note.php', notaActualizada2, function (data) {
+            alert(data);
+            modificando2.removeAttr("data-modificando");
+            cargarNotas(tipo, '#notas2', 'nota2');
+            $.mobile.navigate("#almuerzo");
+        }).fail(function () {
+            // Guardar en localStorage si falla la conexión
+            var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+            notasPendientes.push(notaActualizada2);
+            localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+            alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
 
-</html>
+            // Actualizar en localStorage
+            var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+            var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
+            if (notaIndex > -1) {
+                notasLocales[notaIndex] = notaActualizada2;
+            } else {
+                notasLocales.push(notaActualizada2);
+            }
+            localStorage.setItem(tipo, JSON.stringify(notasLocales));
+            cargarNotas(tipo, '#notas2', 'nota2');
+        });
+
+        return false;
+    });
+
+    // Eventos para manejar la edición de notas de merienda
+    $('#notas3').on("click", ".nota3 .edit", function () {
+        var titulo_actual3 = $(this).parent().children("h3").text();
+        var contenido_actual3 = $(this).parent().children("p").text();
+        var notaId = $(this).parent().data('id');
+        $('#modifica_titulo3').val(titulo_actual3);
+        $('#modifica_contenido3').val(contenido_actual3);
+        $('#modifica_id3').val(notaId);
+        $(this).parent().attr("data-modificando", "este3");
+        $.mobile.navigate('#modificar3');
+    });
+
+    $('#modificar3 form').on("submit", function () {
+        var titulo_modificado3 = $('#modifica_titulo3').val();
+        var contenido_modificado3 = $('#modifica_contenido3').val();
+        var usuario = localStorage.getItem('activeSession');
+        var notaId = $('#modifica_id3').val();
+        var modificando3 = $('#notas3').find("[data-modificando]");
+        var tipo = 'merienda';
+
+        var notaActualizada3 = {
+            id: notaId,
+            usuario_id: usuario,
+            tipo: tipo,
+            titulo: titulo_modificado3,
+            contenido: contenido_modificado3,
+            cumplido: modificando3.data('cumplido') === 'si' ? 1 : 0
+        };
+
+        $.post('database/update_note.php', notaActualizada3, function (data) {
+            alert(data);
+            modificando3.removeAttr("data-modificando");
+            cargarNotas(tipo, '#notas3', 'nota3');
+            $.mobile.navigate("#merienda");
+        }).fail(function () {
+            // Guardar en localStorage si falla la conexión
+            var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+            notasPendientes.push(notaActualizada3);
+            localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+            alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
+
+            // Actualizar en localStorage
+            var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+            var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
+            if (notaIndex > -1) {
+                notasLocales[notaIndex] = notaActualizada3;
+            } else {
+                notasLocales.push(notaActualizada3);
+            }
+            localStorage.setItem(tipo, JSON.stringify(notasLocales));
+            cargarNotas(tipo, '#notas3', 'nota3');
+        });
+
+        return false;
+    });
+
+    // Eventos para manejar la edición de notas de cena
+    $('#notas4').on("click", ".nota4 .edit", function () {
+        var titulo_actual4 = $(this).parent().children("h3").text();
+        var contenido_actual4 = $(this).parent().children("p").text();
+        var notaId = $(this).parent().data('id');
+        $('#modifica_titulo4').val(titulo_actual4);
+        $('#modifica_contenido4').val(contenido_actual4);
+        $('#modifica_id4').val(notaId);
+        $(this).parent().attr("data-modificando", "este4");
+        $.mobile.navigate('#modificar4');
+    });
+
+    $('#modificar4 form').on("submit", function () {
+        var titulo_modificado4 = $('#modifica_titulo4').val();
+        var contenido_modificado4 = $('#modifica_contenido4').val();
+        var usuario = localStorage.getItem('activeSession');
+        var notaId = $('#modifica_id4').val();
+        var modificando4 = $('#notas4').find("[data-modificando]");
+        var tipo = 'cena';
+
+        var notaActualizada4 = {
+            id: notaId,
+            usuario_id: usuario,
+            tipo: tipo,
+            titulo: titulo_modificado4,
+            contenido: contenido_modificado4,
+            cumplido: modificando4.data('cumplido') === 'si' ? 1 : 0
+        };
+
+        $.post('database/update_note.php', notaActualizada4, function (data) {
+            alert(data);
+            modificando4.removeAttr("data-modificando");
+            cargarNotas(tipo, '#notas4', 'nota4');
+            $.mobile.navigate("#cena");
+        }).fail(function () {
+            // Guardar en localStorage si falla la conexión
+            var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+            notasPendientes.push(notaActualizada4);
+            localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+            alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
+
+            // Actualizar en localStorage
+            var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+            var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
+            if (notaIndex > -1) {
+                notasLocales[notaIndex] = notaActualizada4;
+            } else {
+                notasLocales.push(notaActualizada4);
+            }
+            localStorage.setItem(tipo, JSON.stringify(notasLocales));
+            cargarNotas(tipo, '#notas4', 'nota4');
+        });
+
+        return false;
+    });
+
+    // Eventos para manejar la eliminación de notas
+    $('#notas, #notas2, #notas3, #notas4').on("click", ".delete", function () {
+        var notaId = $(this).parent().data('id');
+        var tipo = $(this).parent().hasClass('nota') ? 'desayuno' :
+            $(this).parent().hasClass('nota2') ? 'almuerzo' :
+                $(this).parent().hasClass('nota3') ? 'merienda' : 'cena';
+        var usuario_id = localStorage.getItem('activeSession');
+        var eliminar_nota = confirm("¿Estás seguro que deseas eliminar la receta?");
+        if (eliminar_nota) {
+            $.post('database/delete_note.php', { id: notaId, usuario_id: usuario_id }, function (data) {
+                alert(data);
+                cargarNotas(tipo, '#' + (tipo === 'desayuno' ? 'notas' : tipo === 'almuerzo' ? 'notas2' : tipo === 'merienda' ? 'notas3' : 'notas4'), tipo === 'desayuno' ? 'nota' : tipo === 'almuerzo' ? 'nota2' : tipo === 'merienda' ? 'nota3' : 'nota4');
+            }).fail(function () {
+                // Eliminar de localStorage si falla la conexión
+                var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
+                notasPendientes = notasPendientes.filter(nota => nota.id !== notaId);
+                localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
+                alert('Nota eliminada localmente. Se sincronizará cuando haya conexión.');
+
+                // Eliminar de localStorage para visualización offline
+                var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+                notasLocales = notasLocales.filter(nota => nota.id !== notaId);
+                localStorage.setItem(tipo, JSON.stringify(notasLocales));
+                cargarNotas(tipo, '#' + (tipo === 'desayuno' ? 'notas' : tipo === 'almuerzo' ? 'notas2' : tipo === 'merienda' ? 'notas3' : 'notas4'), tipo === 'desayuno' ? 'nota' : tipo === 'almuerzo' ? 'nota2' : tipo === 'merienda' ? 'nota3' : 'nota4');
+            });
+        }
+    });
+});

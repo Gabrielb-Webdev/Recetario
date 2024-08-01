@@ -1,32 +1,20 @@
 <?php
-require_once 'config.php';
-header('Content-Type: application/json');
+include 'config.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $usuario_id = $_GET['usuario_id'];
-    $tipo = $_GET['tipo'];
+$usuario_id = $_POST['usuario_id'];
 
-    // Validar entrada
-    if (empty($usuario_id) || empty($tipo)) {
-        echo json_encode(['success' => false, 'error' => 'User ID and note type are required.']);
-        exit;
+$sql = "SELECT * FROM notas WHERE usuario_id='$usuario_id'";
+$result = $conn->query($sql);
+
+$notas = [];
+if ($result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $notas[] = $row;
     }
-
-    // Obtener notas de la base de datos
-    $sql = "SELECT id, titulo, contenido, tipo, cumplido FROM notas WHERE usuario_id = ? AND tipo = ?";
-    $stmt = $mysqli->prepare($sql);
-
-    if ($stmt) {
-        $stmt->bind_param('is', $usuario_id, $tipo);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $notas = $result->fetch_all(MYSQLI_ASSOC);
-        echo json_encode($notas);
-        $stmt->close();
-    } else {
-        echo json_encode(['success' => false, 'error' => 'Error preparing statement: ' . $mysqli->error]);
-    }
+    echo json_encode($notas);
 } else {
-    echo json_encode(['success' => false, 'error' => 'Invalid request method.']);
+    echo json_encode([]);
 }
+
+$conn->close();
 ?>

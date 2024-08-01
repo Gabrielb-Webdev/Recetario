@@ -1,9 +1,13 @@
 <?php
+// Este archivo simplemente intenta conectarse a la base de datos
 include 'config.php';
 
-if ($mysqli->ping()) {
-    echo 'connected';
+if ($conn->connect_error) {
+    echo "desconectado";
 } else {
-    echo 'disconnected';
+    echo "conectado";
 }
+
+$conn->close();
 ?>
+
