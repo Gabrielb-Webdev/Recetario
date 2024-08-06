@@ -110,7 +110,7 @@
         function cargarNotas(tipo, contenedor, claseNota) {
             var usuario_id = localStorage.getItem('activeSession');
 
-            $.post('https://palegreen-mandrill-927363.hostingersite.com/get_notes.php', {
+            $.post('database/get_notes.php', {
                 usuario_id: usuario_id
             }, function(data) {
                 var recuperados_array = JSON.parse(data);
@@ -170,7 +170,7 @@
 
         // Función para guardar una nota
         function guardarNota(nuevaNota, tipo, contenedor, claseNota) {
-            $.post('https://palegreen-mandrill-927363.hostingersite.com/save_note.php', nuevaNota, function(data) {
+            $.post('database/save_note.php', nuevaNota, function(data) {
                 console.log(data);
                 cargarNotas(nuevaNota.tipo, contenedor, claseNota);
             }).fail(function() {
@@ -192,7 +192,7 @@
         function sincronizarNotas() {
             var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
             $.each(notasPendientes, function(indice, nota) {
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/save_note.php', nota, function(data) {
+                $.post('database/save_note.php', nota, function(data) {
                     console.log('Nota sincronizada:', data);
                     // Eliminar la nota sincronizada del array local
                     notasPendientes.splice(indice, 1);
@@ -205,7 +205,7 @@
 
         // Función para verificar y sincronizar cuando hay conexión
         function verificarConexion() {
-            $.get('https://palegreen-mandrill-927363.hostingersite.com/check_connection.php', function(data) {
+            $.get('database/check_connection.php', function(data) {
                 if (data === 'conectado') {
                     sincronizarNotas();
                 }
@@ -240,7 +240,7 @@
                 var username = $('#register-username').val();
                 var password = $('#register-password').val();
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/register.php', {
+                $.post('database/register.php', {
                     username: username,
                     password: password
                 }, function(data) {
@@ -269,7 +269,7 @@
                 var username = $('#login-username').val();
                 var password = $('#login-password').val();
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/login.php', {
+                $.post('database/login.php', {
                     username: username,
                     password: password
                 }, function(data) {
@@ -408,7 +408,7 @@
                     cumplido: modificando.data('cumplido') === 'si' ? 1 : 0
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada, function(data) {
+                $.post('database/update_note.php', notaActualizada, function(data) {
                     alert(data);
                     modificando.removeAttr("data-modificando");
                     cargarNotas(tipo, '#notas', 'nota');
@@ -464,7 +464,7 @@
                     cumplido: modificando2.data('cumplido') === 'si' ? 1 : 0
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada2, function(data) {
+                $.post('database/update_note.php', notaActualizada2, function(data) {
                     alert(data);
                     modificando2.removeAttr("data-modificando");
                     cargarNotas(tipo, '#notas2', 'nota2');
@@ -520,7 +520,7 @@
                     cumplido: modificando3.data('cumplido') === 'si' ? 1 : 0
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada3, function(data) {
+                $.post('database/update_note.php', notaActualizada3, function(data) {
                     alert(data);
                     modificando3.removeAttr("data-modificando");
                     cargarNotas(tipo, '#notas3', 'nota3');
@@ -576,7 +576,7 @@
                     cumplido: modificando4.data('cumplido') === 'si' ? 1 : 0
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada4, function(data) {
+                $.post('database/update_note.php', notaActualizada4, function(data) {
                     alert(data);
                     modificando4.removeAttr("data-modificando");
                     cargarNotas(tipo, '#notas4', 'nota4');
@@ -612,7 +612,7 @@
                 var usuario_id = localStorage.getItem('activeSession');
                 var eliminar_nota = confirm("¿Estás seguro que deseas eliminar la receta?");
                 if (eliminar_nota) {
-                    $.post('https://palegreen-mandrill-927363.hostingersite.com/delete_note.php', {
+                    $.post('database/delete_note.php', {
                         id: notaId,
                         usuario_id: usuario_id
                     }, function(data) {
