@@ -23,7 +23,7 @@
             box-shadow: 2px 2px rgb(0, 0, 0, .3);
             border-radius: 30px;
         }
-        
+
         .nota2 {
             background-color: rgb(139, 196, 146);
             color: white;
@@ -35,7 +35,7 @@
             box-shadow: 2px 2px rgb(0, 0, 0, .3);
             border-radius: 30px;
         }
-        
+
         .nota3 {
             background-color: rgb(48, 79, 190);
             color: white;
@@ -47,7 +47,7 @@
             box-shadow: 2px 2px rgb(0, 0, 0, .3);
             border-radius: 30px;
         }
-        
+
         .nota4 {
             background-color: rgb(230, 88, 204);
             color: white;
@@ -59,7 +59,7 @@
             box-shadow: 2px 2px rgb(0, 0, 0, .3);
             border-radius: 30px;
         }
-        
+
         .check {
             position: absolute;
             background-color: rgb(43, 226, 83);
@@ -69,7 +69,7 @@
             top: 20px;
             right: 118px;
         }
-        
+
         .edit {
             position: absolute;
             padding: 7px;
@@ -79,7 +79,7 @@
             top: 20px;
             right: 60px;
         }
-        
+
         .delete {
             position: absolute;
             padding: 7px;
@@ -89,19 +89,19 @@
             top: 20px;
             right: 8px;
         }
-        
+
         .form-buttons {
             display: flex;
             flex-direction: column;
         }
-        
+
         .form-buttons a,
         .form-buttons input {
             margin-bottom: 10px;
         }
     </style>
     <script>
-        $(document).on("pageinit", function() {
+        $(document).on("pageinit", function () {
             $.mobile.defaultPageTransition = "slide";
             $.mobile.defaultDialogTransition = "slidedown";
         });
@@ -110,13 +110,12 @@
         function cargarNotas(tipo, contenedor, claseNota) {
             var usuario_id = localStorage.getItem('activeSession');
 
-            $.post('https://palegreen-mandrill-927363.hostingersite.com/get_notes.php', {
-                usuario_id: usuario_id
-            }, function(data) {
-                var recuperados_array = JSON.parse(data);
-                $(contenedor).empty();
-                $.each(recuperados_array, function(indice, valor) {
-                    if (valor.tipo === tipo) {
+            // Recuperar notas del localStorage
+            var localNotas = JSON.parse(localStorage.getItem(tipo)) || [];
+            $(contenedor).empty();
+            if (localNotas) {
+                $.each(localNotas, function (indice, valor) {
+                    if (valor.usuario_id === usuario_id && valor.tipo === tipo) {
                         var nota = $('<div></div>');
                         nota.attr('class', claseNota)
                             .attr('data-id', valor.id)
@@ -128,88 +127,43 @@
                             .append('<p>' + valor.contenido + '</p>');
 
                         if (valor.cumplido) {
-                            nota.css({
-                                backgroundColor: "green",
-                                color: "white"
-                            });
+                            nota.css({ backgroundColor: "green", color: "white" });
                         }
 
                         $(contenedor).append(nota);
                     }
                 });
-                // Guardar en localStorage si hay conexión
-                localStorage.setItem(tipo, JSON.stringify(recuperados_array));
-            }).fail(function() {
-                // Si falla, cargar desde localStorage
-                var localNotas = JSON.parse(localStorage.getItem(tipo)) || [];
-                $(contenedor).empty();
-                if (localNotas) {
-                    $.each(localNotas, function(indice, valor) {
-                        var nota = $('<div></div>');
-                        nota.attr('class', claseNota)
-                            .attr('data-id', valor.id)
-                            .attr('data-cumplido', valor.cumplido ? 'si' : 'no')
-                            .append('<a href="#" class="check"><img src="imagenes/a.png" alt="a"></a>')
-                            .append('<a href="#" class="edit"><img src="imagenes/b.png" alt="b"></a>')
-                            .append('<a href="#" class="delete"><img src="imagenes/c.png" alt="c"></a>')
-                            .append('<h3>' + valor.titulo + '</h3>')
-                            .append('<p>' + valor.contenido + '</p>');
-
-                        if (valor.cumplido) {
-                            nota.css({
-                                backgroundColor: "green",
-                                color: "white"
-                            });
-                        }
-
-                        $(contenedor).append(nota);
-                    });
-                }
-            });
+            }
         }
 
         // Función para guardar una nota
         function guardarNota(nuevaNota, tipo, contenedor, claseNota) {
-            $.post('https://palegreen-mandrill-927363.hostingersite.com/save_note.php', nuevaNota, function(data) {
-                console.log(data);
-                cargarNotas(nuevaNota.tipo, contenedor, claseNota);
-            }).fail(function() {
-                // Guardar en localStorage si falla la conexión
-                var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-                notasPendientes.push(nuevaNota);
-                localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                alert('Nota guardada localmente. Se sincronizará cuando haya conexión.');
-
-                // Guardar en localStorage para visualización offline
-                var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
-                notasLocales.push(nuevaNota);
-                localStorage.setItem(tipo, JSON.stringify(notasLocales));
-                cargarNotas(tipo, contenedor, claseNota);
-            });
+            // Guardar en localStorage
+            var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+            nuevaNota.id = new Date().getTime(); // Generar un ID único basado en el tiempo actual
+            notasLocales.push(nuevaNota);
+            localStorage.setItem(tipo, JSON.stringify(notasLocales));
+            cargarNotas(tipo, contenedor, claseNota);
         }
 
-        // Función para sincronizar notas
-        function sincronizarNotas() {
-            var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-            $.each(notasPendientes, function(indice, nota) {
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/save_note.php', nota, function(data) {
-                    console.log('Nota sincronizada:', data);
-                    // Eliminar la nota sincronizada del array local
-                    notasPendientes.splice(indice, 1);
-                    localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                }).fail(function() {
-                    console.log('Fallo al sincronizar la nota:', nota);
-                });
-            });
+        // Función para actualizar una nota
+        function actualizarNota(notaActualizada, tipo, contenedor, claseNota) {
+            var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+            var notaIndex = notasLocales.findIndex(nota => nota.id === notaActualizada.id);
+            if (notaIndex > -1) {
+                notasLocales[notaIndex] = notaActualizada;
+                localStorage.setItem(tipo, JSON.stringify(notasLocales));
+                cargarNotas(tipo, contenedor, claseNota);
+            }
         }
 
         // Función para verificar y sincronizar cuando hay conexión
         function verificarConexion() {
-            $.get('https://palegreen-mandrill-927363.hostingersite.com/check_connection.php', function(data) {
+            $.get('database/check_connection.php', function (data) {
                 if (data === 'conectado') {
                     sincronizarNotas();
                 }
-            }).fail(function() {
+            }).fail(function () {
                 console.log('Sin conexión con el servidor');
             });
         }
@@ -217,7 +171,7 @@
         // Verificar la conexión cada 10 segundos
         setInterval(verificarConexion, 10000);
 
-        $(document).ready(function() {
+        $(document).ready(function () {
             $.mobile.page.prototype.options.backBtnText = "Volver";
             $.mobile.page.prototype.options.addBackBtn = true;
             $.mobile.page.prototype.options.backBtnTheme = "d";
@@ -235,81 +189,53 @@
             }
 
             // Registro de usuario
-            $('#register-form').on('submit', function(e) {
+            $('#register-form').on('submit', function (e) {
                 e.preventDefault();
                 var username = $('#register-username').val();
                 var password = $('#register-password').val();
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/register.php', {
-                    username: username,
-                    password: password
-                }, function(data) {
-                    alert(data);
-                    if (data === "Registro exitoso") {
-                        // Guardar en localStorage
-                        localStorage.setItem('user_' + username, JSON.stringify({
-                            username: username,
-                            password: password
-                        }));
-                        $.mobile.changePage("#login");
-                    }
-                }).fail(function() {
-                    // Guardar en localStorage si falla la conexión
-                    localStorage.setItem('user_' + username, JSON.stringify({
-                        username: username,
-                        password: password
-                    }));
-                    alert('Usuario registrado localmente. Se sincronizará cuando haya conexión.');
-                });
+                // Guardar usuario en localStorage
+                var users = JSON.parse(localStorage.getItem('users')) || {};
+                if (users[username]) {
+                    alert("El nombre de usuario ya está registrado. Por favor elige otro.");
+                } else {
+                    users[username] = password;
+                    localStorage.setItem('users', JSON.stringify(users));
+                    alert("Registro exitoso");
+                    $.mobile.changePage("#login");
+                }
             });
 
             // Login de usuario
-            $('#login-form').on('submit', function(e) {
+            $('#login-form').on('submit', function (e) {
                 e.preventDefault();
                 var username = $('#login-username').val();
                 var password = $('#login-password').val();
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/login.php', {
-                    username: username,
-                    password: password
-                }, function(data) {
-                    var response = JSON.parse(data);
-                    if (response.status === "success") {
-                        localStorage.setItem('activeSession', response.user_id);
-                        alert('Login exitoso.');
-                        $.mobile.changePage("#home");
-                        cargarNotas('desayuno', '#notas', 'nota');
-                        cargarNotas('almuerzo', '#notas2', 'nota2');
-                        cargarNotas('merienda', '#notas3', 'nota3');
-                        cargarNotas('cena', '#notas4', 'nota4');
-                    } else {
-                        alert(response.message);
-                    }
-                }).fail(function() {
-                    var user = JSON.parse(localStorage.getItem('user_' + username));
-                    if (user && user.password === password) {
-                        alert('Login exitoso (modo offline).');
-                        localStorage.setItem('activeSession', username); // Usar el nombre de usuario como session en modo offline
-                        $.mobile.changePage("#home");
-                        cargarNotas('desayuno', '#notas', 'nota');
-                        cargarNotas('almuerzo', '#notas2', 'nota2');
-                        cargarNotas('merienda', '#notas3', 'nota3');
-                        cargarNotas('cena', '#notas4', 'nota4');
-                    } else {
-                        alert('Login fallido (modo offline).');
-                    }
-                });
+                // Validar usuario desde localStorage
+                var users = JSON.parse(localStorage.getItem('users')) || {};
+                if (users[username] === password) {
+                    localStorage.setItem('activeSession', username);
+                    alert('Login exitoso.');
+                    $.mobile.changePage("#home");
+                    cargarNotas('desayuno', '#notas', 'nota');
+                    cargarNotas('almuerzo', '#notas2', 'nota2');
+                    cargarNotas('merienda', '#notas3', 'nota3');
+                    cargarNotas('cena', '#notas4', 'nota4');
+                } else {
+                    alert('Nombre de usuario o contraseña incorrectos.');
+                }
             });
 
             // Cerrar sesión
-            $('#logout-button, #logout-button-footer').on('click', function() {
+            $('#logout-button, #logout-button-footer').on('click', function () {
                 localStorage.removeItem('activeSession');
                 alert('Sesión cerrada.');
                 $.mobile.changePage("#login");
             });
 
             // Evento para añadir nueva receta de Desayuno
-            $('#agregar form').on('submit', function() {
+            $('#agregar form').on('submit', function () {
                 var titulo = $('#titulo').val();
                 var contenido = $('#contenido').val();
                 var usuario = localStorage.getItem('activeSession');
@@ -326,7 +252,7 @@
             });
 
             // Evento para añadir nueva receta de Almuerzo
-            $('#agregar2 form').on('submit', function() {
+            $('#agregar2 form').on('submit', function () {
                 var titulo2 = $('#titulo2').val();
                 var contenido2 = $('#contenido2').val();
                 var usuario = localStorage.getItem('activeSession');
@@ -344,7 +270,7 @@
             });
 
             // Evento para añadir nueva receta de Merienda
-            $('#agregar3 form').on('submit', function() {
+            $('#agregar3 form').on('submit', function () {
                 var titulo3 = $('#titulo3').val();
                 var contenido3 = $('#contenido3').val();
                 var usuario = localStorage.getItem('activeSession');
@@ -362,7 +288,7 @@
             });
 
             // Evento para añadir nueva receta de Cena
-            $('#agregar4 form').on('submit', function() {
+            $('#agregar4 form').on('submit', function () {
                 var titulo4 = $('#titulo4').val();
                 var contenido4 = $('#contenido4').val();
                 var usuario = localStorage.getItem('activeSession');
@@ -380,7 +306,7 @@
             });
 
             // Eventos para manejar la edición de notas de desayuno
-            $('#notas').on("click", ".nota .edit", function() {
+            $('#notas').on("click", ".nota .edit", function () {
                 var titulo_actual = $(this).parent().children("h3").text();
                 var contenido_actual = $(this).parent().children("p").text();
                 var notaId = $(this).parent().data('id');
@@ -391,12 +317,11 @@
                 $.mobile.navigate('#modificar');
             });
 
-            $('#modificar form').on("submit", function() {
+            $('#modificar form').on("submit", function () {
                 var titulo_modificado = $('#modifica_titulo').val();
                 var contenido_modificado = $('#modifica_contenido').val();
                 var usuario = localStorage.getItem('activeSession');
-                var notaId = $('#modifica_id').val();
-                var modificando = $('#notas').find("[data-modificando]");
+                var notaId = parseInt($('#modifica_id').val());
                 var tipo = 'desayuno';
 
                 var notaActualizada = {
@@ -405,38 +330,16 @@
                     tipo: tipo,
                     titulo: titulo_modificado,
                     contenido: contenido_modificado,
-                    cumplido: modificando.data('cumplido') === 'si' ? 1 : 0
+                    cumplido: false
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada, function(data) {
-                    alert(data);
-                    modificando.removeAttr("data-modificando");
-                    cargarNotas(tipo, '#notas', 'nota');
-                    $.mobile.navigate("#desayuno");
-                }).fail(function() {
-                    // Guardar en localStorage si falla la conexión
-                    var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-                    notasPendientes.push(notaActualizada);
-                    localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                    alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
-
-                    // Actualizar en localStorage
-                    var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
-                    var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
-                    if (notaIndex > -1) {
-                        notasLocales[notaIndex] = notaActualizada;
-                    } else {
-                        notasLocales.push(notaActualizada);
-                    }
-                    localStorage.setItem(tipo, JSON.stringify(notasLocales));
-                    cargarNotas(tipo, '#notas', 'nota');
-                });
-
+                actualizarNota(notaActualizada, tipo, '#notas', 'nota');
+                $.mobile.navigate("#desayuno");
                 return false;
             });
 
             // Eventos para manejar la edición de notas de almuerzo
-            $('#notas2').on("click", ".nota2 .edit", function() {
+            $('#notas2').on("click", ".nota2 .edit", function () {
                 var titulo_actual2 = $(this).parent().children("h3").text();
                 var contenido_actual2 = $(this).parent().children("p").text();
                 var notaId = $(this).parent().data('id');
@@ -447,12 +350,11 @@
                 $.mobile.navigate('#modificar2');
             });
 
-            $('#modificar2 form').on("submit", function() {
+            $('#modificar2 form').on("submit", function () {
                 var titulo_modificado2 = $('#modifica_titulo2').val();
                 var contenido_modificado2 = $('#modifica_contenido2').val();
                 var usuario = localStorage.getItem('activeSession');
-                var notaId = $('#modifica_id2').val();
-                var modificando2 = $('#notas2').find("[data-modificando]");
+                var notaId = parseInt($('#modifica_id2').val());
                 var tipo = 'almuerzo';
 
                 var notaActualizada2 = {
@@ -461,38 +363,16 @@
                     tipo: tipo,
                     titulo: titulo_modificado2,
                     contenido: contenido_modificado2,
-                    cumplido: modificando2.data('cumplido') === 'si' ? 1 : 0
+                    cumplido: false
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada2, function(data) {
-                    alert(data);
-                    modificando2.removeAttr("data-modificando");
-                    cargarNotas(tipo, '#notas2', 'nota2');
-                    $.mobile.navigate("#almuerzo");
-                }).fail(function() {
-                    // Guardar en localStorage si falla la conexión
-                    var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-                    notasPendientes.push(notaActualizada2);
-                    localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                    alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
-
-                    // Actualizar en localStorage
-                    var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
-                    var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
-                    if (notaIndex > -1) {
-                        notasLocales[notaIndex] = notaActualizada2;
-                    } else {
-                        notasLocales.push(notaActualizada2);
-                    }
-                    localStorage.setItem(tipo, JSON.stringify(notasLocales));
-                    cargarNotas(tipo, '#notas2', 'nota2');
-                });
-
+                actualizarNota(notaActualizada2, tipo, '#notas2', 'nota2');
+                $.mobile.navigate("#almuerzo");
                 return false;
             });
 
             // Eventos para manejar la edición de notas de merienda
-            $('#notas3').on("click", ".nota3 .edit", function() {
+            $('#notas3').on("click", ".nota3 .edit", function () {
                 var titulo_actual3 = $(this).parent().children("h3").text();
                 var contenido_actual3 = $(this).parent().children("p").text();
                 var notaId = $(this).parent().data('id');
@@ -503,12 +383,11 @@
                 $.mobile.navigate('#modificar3');
             });
 
-            $('#modificar3 form').on("submit", function() {
+            $('#modificar3 form').on("submit", function () {
                 var titulo_modificado3 = $('#modifica_titulo3').val();
                 var contenido_modificado3 = $('#modifica_contenido3').val();
                 var usuario = localStorage.getItem('activeSession');
-                var notaId = $('#modifica_id3').val();
-                var modificando3 = $('#notas3').find("[data-modificando]");
+                var notaId = parseInt($('#modifica_id3').val());
                 var tipo = 'merienda';
 
                 var notaActualizada3 = {
@@ -517,38 +396,16 @@
                     tipo: tipo,
                     titulo: titulo_modificado3,
                     contenido: contenido_modificado3,
-                    cumplido: modificando3.data('cumplido') === 'si' ? 1 : 0
+                    cumplido: false
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada3, function(data) {
-                    alert(data);
-                    modificando3.removeAttr("data-modificando");
-                    cargarNotas(tipo, '#notas3', 'nota3');
-                    $.mobile.navigate("#merienda");
-                }).fail(function() {
-                    // Guardar en localStorage si falla la conexión
-                    var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-                    notasPendientes.push(notaActualizada3);
-                    localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                    alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
-
-                    // Actualizar en localStorage
-                    var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
-                    var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
-                    if (notaIndex > -1) {
-                        notasLocales[notaIndex] = notaActualizada3;
-                    } else {
-                        notasLocales.push(notaActualizada3);
-                    }
-                    localStorage.setItem(tipo, JSON.stringify(notasLocales));
-                    cargarNotas(tipo, '#notas3', 'nota3');
-                });
-
+                actualizarNota(notaActualizada3, tipo, '#notas3', 'nota3');
+                $.mobile.navigate("#merienda");
                 return false;
             });
 
             // Eventos para manejar la edición de notas de cena
-            $('#notas4').on("click", ".nota4 .edit", function() {
+            $('#notas4').on("click", ".nota4 .edit", function () {
                 var titulo_actual4 = $(this).parent().children("h3").text();
                 var contenido_actual4 = $(this).parent().children("p").text();
                 var notaId = $(this).parent().data('id');
@@ -559,12 +416,11 @@
                 $.mobile.navigate('#modificar4');
             });
 
-            $('#modificar4 form').on("submit", function() {
+            $('#modificar4 form').on("submit", function () {
                 var titulo_modificado4 = $('#modifica_titulo4').val();
                 var contenido_modificado4 = $('#modifica_contenido4').val();
                 var usuario = localStorage.getItem('activeSession');
-                var notaId = $('#modifica_id4').val();
-                var modificando4 = $('#notas4').find("[data-modificando]");
+                var notaId = parseInt($('#modifica_id4').val());
                 var tipo = 'cena';
 
                 var notaActualizada4 = {
@@ -573,64 +429,28 @@
                     tipo: tipo,
                     titulo: titulo_modificado4,
                     contenido: contenido_modificado4,
-                    cumplido: modificando4.data('cumplido') === 'si' ? 1 : 0
+                    cumplido: false
                 };
 
-                $.post('https://palegreen-mandrill-927363.hostingersite.com/update_note.php', notaActualizada4, function(data) {
-                    alert(data);
-                    modificando4.removeAttr("data-modificando");
-                    cargarNotas(tipo, '#notas4', 'nota4');
-                    $.mobile.navigate("#cena");
-                }).fail(function() {
-                    // Guardar en localStorage si falla la conexión
-                    var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-                    notasPendientes.push(notaActualizada4);
-                    localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                    alert('Nota actualizada localmente. Se sincronizará cuando haya conexión.');
-
-                    // Actualizar en localStorage
-                    var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
-                    var notaIndex = notasLocales.findIndex(nota => nota.id === notaId);
-                    if (notaIndex > -1) {
-                        notasLocales[notaIndex] = notaActualizada4;
-                    } else {
-                        notasLocales.push(notaActualizada4);
-                    }
-                    localStorage.setItem(tipo, JSON.stringify(notasLocales));
-                    cargarNotas(tipo, '#notas4', 'nota4');
-                });
-
+                actualizarNota(notaActualizada4, tipo, '#notas4', 'nota4');
+                $.mobile.navigate("#cena");
                 return false;
             });
 
             // Eventos para manejar la eliminación de notas
-            $('#notas, #notas2, #notas3, #notas4').on("click", ".delete", function() {
+            $('#notas, #notas2, #notas3, #notas4').on("click", ".delete", function () {
                 var notaId = $(this).parent().data('id');
                 var tipo = $(this).parent().hasClass('nota') ? 'desayuno' :
                     $(this).parent().hasClass('nota2') ? 'almuerzo' :
-                    $(this).parent().hasClass('nota3') ? 'merienda' : 'cena';
+                        $(this).parent().hasClass('nota3') ? 'merienda' : 'cena';
                 var usuario_id = localStorage.getItem('activeSession');
                 var eliminar_nota = confirm("¿Estás seguro que deseas eliminar la receta?");
                 if (eliminar_nota) {
-                    $.post('https://palegreen-mandrill-927363.hostingersite.com/delete_note.php', {
-                        id: notaId,
-                        usuario_id: usuario_id
-                    }, function(data) {
-                        alert(data);
-                        cargarNotas(tipo, '#' + (tipo === 'desayuno' ? 'notas' : tipo === 'almuerzo' ? 'notas2' : tipo === 'merienda' ? 'notas3' : 'notas4'), tipo === 'desayuno' ? 'nota' : tipo === 'almuerzo' ? 'nota2' : tipo === 'merienda' ? 'nota3' : 'nota4');
-                    }).fail(function() {
-                        // Eliminar de localStorage si falla la conexión
-                        var notasPendientes = JSON.parse(localStorage.getItem('notasPendientes')) || [];
-                        notasPendientes = notasPendientes.filter(nota => nota.id !== notaId);
-                        localStorage.setItem('notasPendientes', JSON.stringify(notasPendientes));
-                        alert('Nota eliminada localmente. Se sincronizará cuando haya conexión.');
-
-                        // Eliminar de localStorage para visualización offline
-                        var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
-                        notasLocales = notasLocales.filter(nota => nota.id !== notaId);
-                        localStorage.setItem(tipo, JSON.stringify(notasLocales));
-                        cargarNotas(tipo, '#' + (tipo === 'desayuno' ? 'notas' : tipo === 'almuerzo' ? 'notas2' : tipo === 'merienda' ? 'notas3' : 'notas4'), tipo === 'desayuno' ? 'nota' : tipo === 'almuerzo' ? 'nota2' : tipo === 'merienda' ? 'nota3' : 'nota4');
-                    });
+                    // Eliminar del localStorage
+                    var notasLocales = JSON.parse(localStorage.getItem(tipo)) || [];
+                    notasLocales = notasLocales.filter(nota => nota.id !== notaId);
+                    localStorage.setItem(tipo, JSON.stringify(notasLocales));
+                    cargarNotas(tipo, '#' + (tipo === 'desayuno' ? 'notas' : tipo === 'almuerzo' ? 'notas2' : tipo === 'merienda' ? 'notas3' : 'notas4'), tipo === 'desayuno' ? 'nota' : tipo === 'almuerzo' ? 'nota2' : tipo === 'merienda' ? 'nota3' : 'nota4');
                 }
             });
         });
