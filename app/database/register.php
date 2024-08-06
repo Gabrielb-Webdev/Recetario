@@ -21,8 +21,12 @@ $sql->bind_param("ss", $username, $password);
 if ($sql->execute()) {
     echo "Registro exitoso";
 } else {
-    echo "Error: " . $sql->error;
+    // Detectar error de conexión
+    if ($conn->connect_error) {
+        echo json_encode(["status" => "error", "message" => "No hay conexión a la base de datos"]);
+    } else {
+        echo "Error: " . $sql->error;
+    }
 }
 
 $conn->close();
-?>
